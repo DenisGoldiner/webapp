@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -42,7 +41,7 @@ func (c Client) GetTraveller(ctx context.Context, id uuid.UUID) (internal.Travel
 	}
 
 	if len(travelers) == 0 {
-		return internal.Traveller{}, errors.New("no travelers found")
+		return internal.Traveller{}, fmt.Errorf("no travelers with id %s: %w", id, internal.ErrNoResource)
 	}
 
 	return internal.Traveller{

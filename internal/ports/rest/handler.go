@@ -2,11 +2,12 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/google/uuid"
+	"golang.org/x/exp/slog"
 
 	"github.com/DenisGoldiner/webapp/internal"
 )
@@ -31,13 +32,13 @@ func (h TravellerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.DeleteTraveller(w, r)
 	default:
 		msg := fmt.Sprintf("method %s is not supported", r.Method)
-		log.Println(msg)
+		slog.Info(msg)
 		http.Error(w, msg, http.StatusMethodNotAllowed)
 	}
 }
 
 func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
-	log.Println("GetTraveller")
+	slog.Info("GetTraveller")
 
 	ctx := r.Context()
 
@@ -49,7 +50,13 @@ func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.service.GetTraveller(ctx, id)
+	if errors.Is(err, internal.ErrNoResource) {
+		slog.Warn("request failed", "error", err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 	if err != nil {
+		slog.Error("request failed", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -61,7 +68,7 @@ func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = json.NewEncoder(w).Encode(respTraveller); err != nil {
-		log.Println(err)
+		slog.Error("failed to encode response", "error", err)
 		return
 	}
 
@@ -69,7 +76,7 @@ func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h TravellerHandler) CreateTraveller(w http.ResponseWriter, r *http.Request) {
-	log.Println("CreateTraveller")
+	slog.Info("CreateTraveller")
 
 	if r.Body == nil {
 		http.Error(w, "body must not be nil", http.StatusBadRequest)
@@ -83,7 +90,7 @@ func (h TravellerHandler) CreateTraveller(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.Println("CreateTravellerPayload", payload)
+	slog.Info("CreateTravellerPayload", payload)
 
 	h.service.CreateTraveller(r.Context(), internal.Traveller{})
 
@@ -91,7 +98,7 @@ func (h TravellerHandler) CreateTraveller(w http.ResponseWriter, r *http.Request
 }
 
 func (h TravellerHandler) DeleteTraveller(w http.ResponseWriter, r *http.Request) {
-	log.Println("DeleteTraveller")
+	slog.Info("DeleteTraveller")
 
 	h.service.DeleteTraveller()
 
