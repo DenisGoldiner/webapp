@@ -8,6 +8,8 @@ import (
 )
 
 var ErrNoResource = errors.New("no resource found")
+var ErrAlreadyExists = errors.New("resource already exists")
+var ErrInvalidInput = errors.New("invalid input")
 
 type TravellerStorage interface {
 	Get(ctx context.Context, id uuid.UUID) (Traveller, error)

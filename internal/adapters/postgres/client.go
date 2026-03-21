@@ -2,10 +2,12 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 
 	"github.com/DenisGoldiner/webapp/internal"
 )
@@ -56,7 +58,13 @@ func (c Client) Create(ctx context.Context, params internal.CreateTravellerPaylo
 	q := "insert into travellers (first_name, last_name, age) values ($1, $2, $3) returning id"
 
 	rows, err := c.dbExec.QueryxContext(ctx, q, params.FirstName, params.LastName, params.Age)
+
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == pqErrCodeUniqueViolation {
+			return uuid.Nil, fmt.Errorf("traveler already exists: %w", internal.ErrAlreadyExists)
+		}
+
 		return uuid.Nil, fmt.Errorf("failed to create traveler: %w", err)
 	}
 

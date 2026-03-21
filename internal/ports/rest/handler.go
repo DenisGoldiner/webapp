@@ -93,9 +93,20 @@ func (h TravellerHandler) CreateTraveller(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	slog.Info("CreateTravellerPayload", payload)
+	slog.Info("CreateTravellerPayload", "payload", payload)
 
 	travellerID, err := h.service.CreateTraveller(r.Context(), payload.toServiceParams())
+	if errors.Is(err, internal.ErrAlreadyExists) {
+		slog.Error("Create request failed", "error", err)
+		http.Error(w, "The traveller already exists", http.StatusConflict)
+		return
+	}
+	if errors.Is(err, internal.ErrInvalidInput) {
+		slog.Error("Create request failed", "error", err)
+		http.Error(w, "The traveller data is not valid", http.StatusBadRequest)
+		return
+	}
+
 	if err != nil {
 		slog.Error("Create request failed", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

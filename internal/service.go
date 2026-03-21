@@ -30,7 +30,7 @@ func (t Travellers) GetTraveller(ctx context.Context, id uuid.UUID) (Traveller, 
 
 func (t Travellers) CreateTraveller(ctx context.Context, traveller CreateTravellerPayload) (uuid.UUID, error) {
 	if traveller.FirstName == "" || traveller.LastName == "" {
-		return uuid.Nil, fmt.Errorf("first name and last name must be provided")
+		return uuid.Nil, fmt.Errorf("%w: first name and last name must be provided", ErrInvalidInput)
 	}
 
 	travellerID, err := t.travellerStorage.Create(ctx, traveller)
