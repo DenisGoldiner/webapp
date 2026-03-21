@@ -38,7 +38,7 @@ func (h TravellerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
-	slog.Info("GetTraveller")
+	slog.Info("Get")
 
 	ctx := r.Context()
 
@@ -65,6 +65,7 @@ func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
 		ID:        res.ID,
 		FirstName: res.FirstName,
 		LastName:  res.LastName,
+		Age:       res.Age,
 	}
 
 	if err = json.NewEncoder(w).Encode(respTraveller); err != nil {
@@ -76,23 +77,39 @@ func (h TravellerHandler) GetTraveller(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h TravellerHandler) CreateTraveller(w http.ResponseWriter, r *http.Request) {
-	slog.Info("CreateTraveller")
+	slog.Info("Create")
 
 	if r.Body == nil {
-		http.Error(w, "body must not be nil", http.StatusBadRequest)
+		http.Error(w, "Body must not be nil", http.StatusBadRequest)
 		return
 	}
 
 	var payload CreateTravellerPayload
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse the body %v", err), http.StatusBadRequest)
+		err = fmt.Errorf("failed to decode the body: %w", err)
+		slog.Error("Create request failed", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	slog.Info("CreateTravellerPayload", payload)
 
-	h.service.CreateTraveller(r.Context(), internal.Traveller{})
+	travellerID, err := h.service.CreateTraveller(r.Context(), payload.toServiceParams())
+	if err != nil {
+		slog.Error("Create request failed", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respTraveller := CreateTravellerResponse{
+		ID: travellerID,
+	}
+
+	if err = json.NewEncoder(w).Encode(respTraveller); err != nil {
+		slog.Error("failed to encode response", "error", err)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }

@@ -5,15 +5,14 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"golang.org/x/exp/slog"
 )
 
 type Travellers struct {
-	db Storage
+	travellerStorage TravellerStorage
 }
 
-func NewTravellers(db Storage) Travellers {
-	return Travellers{db: db}
+func NewTravellers(db TravellerStorage) Travellers {
+	return Travellers{travellerStorage: db}
 }
 
 func (t Travellers) GetTraveller(ctx context.Context, id uuid.UUID) (Traveller, error) {
@@ -21,17 +20,25 @@ func (t Travellers) GetTraveller(ctx context.Context, id uuid.UUID) (Traveller, 
 		return Traveller{}, fmt.Errorf("id must be a valid uuid")
 	}
 
-	res, err := t.db.GetTraveller(ctx, id)
+	res, err := t.travellerStorage.Get(ctx, id)
 	if err != nil {
-		return Traveller{}, fmt.Errorf("%w: failed to get traveller from db", err)
+		return Traveller{}, fmt.Errorf("%w: failed to get traveller from travellerStorage", err)
 	}
 
 	return res, nil
 }
 
-func (t Travellers) CreateTraveller(ctx context.Context, traveller Traveller) (uuid.UUID, error) {
-	slog.Info("create traveler payload", "traveler", traveller)
-	return uuid.New(), nil
+func (t Travellers) CreateTraveller(ctx context.Context, traveller CreateTravellerPayload) (uuid.UUID, error) {
+	if traveller.FirstName == "" || traveller.LastName == "" {
+		return uuid.Nil, fmt.Errorf("first name and last name must be provided")
+	}
+
+	travellerID, err := t.travellerStorage.Create(ctx, traveller)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to create traveller in travellerStorage: %w", err)
+	}
+
+	return travellerID, nil
 }
 
 func (t Travellers) DeleteTraveller() {

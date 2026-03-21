@@ -18,7 +18,7 @@ func NewClient(dbExec sqlx.ExtContext) Client {
 	return Client{dbExec: dbExec}
 }
 
-func (c Client) GetTraveller(ctx context.Context, id uuid.UUID) (internal.Traveller, error) {
+func (c Client) Get(ctx context.Context, id uuid.UUID) (internal.Traveller, error) {
 	q := "select id, first_name, last_name, age from travellers where id = $1"
 
 	rows, err := c.dbExec.QueryxContext(ctx, q, id)
@@ -52,8 +52,33 @@ func (c Client) GetTraveller(ctx context.Context, id uuid.UUID) (internal.Travel
 	}, err
 }
 
-func (c Client) CreateTraveller() {
+func (c Client) Create(ctx context.Context, params internal.CreateTravellerPayload) (uuid.UUID, error) {
+	q := "insert into travellers (first_name, last_name, age) values ($1, $2, $3) returning id"
 
+	rows, err := c.dbExec.QueryxContext(ctx, q, params.FirstName, params.LastName, params.Age)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to create traveler: %w", err)
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var travelerIDs []uuid.UUID
+
+	for rows.Next() {
+		var travelerID uuid.UUID
+
+		if err = rows.Scan(&travelerID); err != nil {
+			return uuid.Nil, fmt.Errorf("failed to scan traveler id: %w", err)
+		}
+
+		travelerIDs = append(travelerIDs, travelerID)
+	}
+
+	if len(travelerIDs) == 0 {
+		return uuid.Nil, fmt.Errorf("failed to create traveler: no id returned")
+	}
+
+	return travelerIDs[0], nil
 }
 
 func (c Client) DeleteTraveller() {

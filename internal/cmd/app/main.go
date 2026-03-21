@@ -7,6 +7,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"golang.org/x/exp/slog"
 
 	"github.com/DenisGoldiner/webapp/internal"
 	"github.com/DenisGoldiner/webapp/internal/adapters/postgres"
@@ -15,6 +16,9 @@ import (
 
 func main() {
 	app := newApplication()
+
+	slog.Info("Starting application")
+	
 	app.start()
 }
 

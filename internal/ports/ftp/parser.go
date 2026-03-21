@@ -77,7 +77,7 @@ func (p Parser) parse(r *csv.Reader) ([]internal.Traveller, error) {
 
 func (p Parser) process(ctx context.Context, travelers []internal.Traveller) error {
 	for _, traveler := range travelers {
-		if _, err := p.service.CreateTraveller(ctx, traveler); err != nil {
+		if _, err := p.service.Create(ctx, traveler); err != nil {
 			return fmt.Errorf("failed to create traveller: %w", err)
 		}
 	}
