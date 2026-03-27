@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -52,6 +53,59 @@ func (c Client) Get(ctx context.Context, id uuid.UUID) (internal.Traveller, erro
 		LastName:  travelers[0].LastName,
 		Age:       travelers[0].Age,
 	}, err
+}
+
+func (c Client) Select(ctx context.Context, ids []uuid.UUID, limit, offset int) ([]internal.Traveller, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	q := "select id, first_name, last_name, age from travellers "
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+
+	for i, id := range ids {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+	q += fmt.Sprintf(" where id IN (%s) ", strings.Join(placeholders, ", "))
+	q += fmt.Sprintf(" limit %d offset %d ", limit, offset)
+	q += " order by created_at desc "
+
+	rows, err := c.dbExec.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch traveler: %w", err)
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var travelers []Traveller
+
+	for rows.Next() {
+		var traveler Traveller
+
+		if err = rows.StructScan(&traveler); err != nil {
+			return nil, fmt.Errorf("failed to scan traveler: %w", err)
+		}
+
+		travelers = append(travelers, traveler)
+	}
+
+	if len(travelers) == 0 {
+		return nil, fmt.Errorf("no travelers", internal.ErrNoResource)
+	}
+
+	var internalTravelers []internal.Traveller
+	for i := range travelers {
+		internalTravelers = append(internalTravelers, internal.Traveller{
+			ID:        travelers[i].ID,
+			FirstName: travelers[i].FirstName,
+			LastName:  travelers[i].LastName,
+			Age:       travelers[i].Age,
+		})
+	}
+
+	return internalTravelers, err
 }
 
 func (c Client) Create(ctx context.Context, params internal.CreateTravellerPayload) (uuid.UUID, error) {

@@ -2,24 +2,41 @@ package main
 
 import (
 	"context"
-	"github.com/DenisGoldiner/webapp/internal/ports/ftp"
-	"github.com/gofiber/fiber/v3"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	"golang.org/x/exp/trace"
 	"log"
 	"os"
 
 	"github.com/DenisGoldiner/webapp/internal"
 	"github.com/DenisGoldiner/webapp/internal/adapters/postgres"
+	"github.com/DenisGoldiner/webapp/internal/ports/ftp"
+	"github.com/gofiber/fiber/v3"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"golang.org/x/exp/trace"
 )
 
 func main() {
-	run()
+	simpleRun()
 }
 
-func run() {
+func simpleRun() {
+	dbExec, err := newDB()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	ctx := context.Background()
+
+	travellersClient := postgres.NewClient(dbExec)
+	travellersService := internal.NewTravellers(travellersClient)
+	travellersParser := ftp.NewParser(travellersService)
+
+	if err = travellersParser.Run(ctx, "/Users/denys/Go/src/github.com/DenisGoldiner/webapp/internal/integration/data/test_1.csv"); err != nil {
+		log.Printf("error running travellers import: %v", err)
+		return
+	}
+}
+
+func traceRun() {
 	fr := trace.NewFlightRecorder()
 	if err := fr.Start(); err != nil {
 		// handle error
