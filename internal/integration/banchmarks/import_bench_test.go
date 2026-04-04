@@ -2,15 +2,23 @@ package banchmarks
 
 import (
 	"context"
+	"log"
+	"testing"
+
 	"github.com/DenisGoldiner/webapp/internal"
 	"github.com/DenisGoldiner/webapp/internal/adapters/postgres"
 	"github.com/DenisGoldiner/webapp/internal/ports/ftp"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"log"
-	"testing"
 )
 
+// simple	  BenchmarkSample-12    	       4	 274281636 ns/op
+// concurrent BenchmarkSample-12    	       4	 269966636 ns/op
+//			  BenchmarkSample-12    	       4	 264737292 ns/op
+//            BenchmarkSample-12    	       5	 245282900 ns/op
+
+// BenchmarkSample-12    	       1	2764022250 ns/op
+// BenchmarkSample-12    	       2	 747799854 ns/op
 func BenchmarkSample(b *testing.B) {
 	dbExec, err := newDB()
 	if err != nil {
@@ -21,7 +29,7 @@ func BenchmarkSample(b *testing.B) {
 
 	travellersClient := postgres.NewClient(dbExec)
 	travellersService := internal.NewTravellers(travellersClient)
-	travellersParser := ftp.NewParser(travellersService)
+	travellersParser := ftp.NewConcurrentParser(travellersService)
 
 	b.ResetTimer()
 
