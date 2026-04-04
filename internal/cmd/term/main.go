@@ -15,6 +15,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// go tool pprof -http=:8080 cpu_profile.prof
+// go tool trace trace.out
+
 func main() {
 	traceRun()
 }
