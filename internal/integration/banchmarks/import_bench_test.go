@@ -19,6 +19,9 @@ import (
 
 // BenchmarkSample-12    	       1	2764022250 ns/op
 // BenchmarkSample-12    	       2	 747799854 ns/op
+// concurrent 10 * 50 					BenchmarkSample-12    	      25	  47567932 ns/op
+// simple all in 						BenchmarkSample-12    	      18	  60528782 ns/op
+// concurrent 5 * 500 					BenchmarkSample-12    	      39	  26125076 ns/op
 func BenchmarkSample(b *testing.B) {
 	dbExec, err := newDB()
 	if err != nil {

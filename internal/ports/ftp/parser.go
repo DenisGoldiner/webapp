@@ -40,7 +40,7 @@ func (p Parser) Run(ctx context.Context, filePath string) error {
 		return err
 	}
 
-	if err = p.process(ctx, travelers); err != nil {
+	if err = p.bulkProcess(ctx, travelers); err != nil {
 		return err
 	}
 
@@ -82,6 +82,14 @@ func (p Parser) process(ctx context.Context, travelers []internal.CreateTravelle
 		if _, err := p.service.CreateTraveller(ctx, traveler); err != nil {
 			return fmt.Errorf("failed to create traveller: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (p Parser) bulkProcess(ctx context.Context, travelers []internal.CreateTravellerPayload) error {
+	if _, err := p.service.BulkCreateTravellers(ctx, travelers); err != nil {
+		return fmt.Errorf("failed to bulk create travellers: %w", err)
 	}
 
 	return nil

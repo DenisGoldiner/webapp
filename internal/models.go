@@ -14,6 +14,7 @@ var ErrInvalidInput = errors.New("invalid input")
 type TravellerStorage interface {
 	Get(ctx context.Context, id uuid.UUID) (Traveller, error)
 	Create(ctx context.Context, params CreateTravellerPayload) (uuid.UUID, error)
+	BulkCreate(ctx context.Context, params []CreateTravellerPayload) ([]uuid.UUID, error)
 }
 
 type Traveller struct {

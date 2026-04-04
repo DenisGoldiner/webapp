@@ -37,14 +37,15 @@ func (p ConcurrentParser) Run(ctx context.Context, filePath string) error {
 	}
 	reader := csv.NewReader(bytes.NewReader(data))
 
-	const workers = 30
+	const workers = 5
 	ch := p.parse(reader, workers)
 
 	var wg sync.WaitGroup
 
 	for i := 0; i < workers; i++ {
 		wg.Go(func() {
-			p.process(ctx, ch)
+			//p.process(ctx, ch)
+			p.bulkProcess(ctx, ch)
 		})
 	}
 
@@ -95,5 +96,23 @@ func (p ConcurrentParser) process(ctx context.Context, ch <-chan internal.Create
 			log.Printf("failed to create traveller: %v", err)
 			continue
 		}
+	}
+}
+
+func (p ConcurrentParser) bulkProcess(ctx context.Context, ch <-chan internal.CreateTravellerPayload) {
+	bulk := make([]internal.CreateTravellerPayload, 0, 50)
+
+	for traveler := range ch {
+		if len(bulk) < 500 {
+			bulk = append(bulk, traveler)
+			continue
+		}
+
+		if _, err := p.service.BulkCreateTravellers(ctx, bulk); err != nil {
+			log.Printf("failed to create traveller: %v", err)
+			continue
+		}
+
+		bulk = bulk[:0]
 	}
 }

@@ -41,6 +41,19 @@ func (t Travellers) CreateTraveller(ctx context.Context, traveller CreateTravell
 	return travellerID, nil
 }
 
+func (t Travellers) BulkCreateTravellers(ctx context.Context, travellers []CreateTravellerPayload) ([]uuid.UUID, error) {
+	if len(travellers) == 0 {
+		return nil, fmt.Errorf("%w: travellers list must not be empty", ErrInvalidInput)
+	}
+
+	travellerIDs, err := t.travellerStorage.BulkCreate(ctx, travellers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to bulk create travellers in travellerStorage: %w", err)
+	}
+
+	return travellerIDs, nil
+}
+
 func (t Travellers) DeleteTraveller() {
 
 }

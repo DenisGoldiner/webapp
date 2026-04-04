@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	profileRun()
+	traceRun()
 }
 
 func simpleRun() {
@@ -58,7 +58,7 @@ func concurrentRun() {
 func profileRun() {
 	var buf bytes.Buffer
 
-	if err := pprof.WriteHeapProfile(&buf); err != nil {
+	if err := pprof.StartCPUProfile(&buf); err != nil {
 		log.Fatal(err)
 		return
 	}

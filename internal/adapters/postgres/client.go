@@ -143,6 +143,51 @@ func (c Client) Create(ctx context.Context, params internal.CreateTravellerPaylo
 	return travelerIDs[0], nil
 }
 
+func (c Client) BulkCreate(ctx context.Context, params []internal.CreateTravellerPayload) ([]uuid.UUID, error) {
+	if len(params) == 0 {
+		return nil, nil
+	}
+
+	placeholders := make([]string, len(params))
+	args := make([]interface{}, 0, len(params)*3)
+
+	for i, p := range params {
+		base := i * 3
+		placeholders[i] = fmt.Sprintf("($%d, $%d, $%d)", base+1, base+2, base+3)
+		args = append(args, p.FirstName, p.LastName, p.Age)
+	}
+
+	q := "INSERT INTO travellers (first_name, last_name, age) VALUES " +
+		strings.Join(placeholders, ", ") +
+		" RETURNING id"
+
+	rows, err := c.dbExec.QueryxContext(ctx, q, args...)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == pqErrCodeUniqueViolation {
+			return nil, fmt.Errorf("traveler already exists: %w", internal.ErrAlreadyExists)
+		}
+
+		return nil, fmt.Errorf("failed to bulk create travelers: %w", err)
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var ids []uuid.UUID
+
+	for rows.Next() {
+		var id uuid.UUID
+
+		if err = rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan traveler id: %w", err)
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
+}
+
 func (c Client) DeleteTraveller() {
 
 }
